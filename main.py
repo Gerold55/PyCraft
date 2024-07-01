@@ -7,19 +7,19 @@ import numpy as np
 
 # Define cube vertices and faces
 vertices = np.array([
-    (0, 0, 0),  # 0: bottom-left-front
-    (1, 0, 0),  # 1: bottom-right-front
-    (1, 1, 0),  # 2: top-right-front
-    (0, 1, 0),  # 3: top-left-front
-    (0, 0, 1),  # 4: bottom-left-back
-    (1, 0, 1),  # 5: bottom-right-back
-    (1, 1, 1),  # 6: top-right-back
-    (0, 1, 1)   # 7: top-left-back
+    (0, 0, 0),
+    (1, 0, 0),
+    (1, 1, 0),
+    (0, 1, 0),
+    (0, 0, 1),
+    (1, 0, 1),
+    (1, 1, 1),
+    (0, 1, 1)
 ], dtype=np.float32)
 
 faces = np.array([
-    (0, 1, 2, 3),  # front face
-    (4, 5, 6, 7),  # back face
+    (0, 1, 2, 3),  # back face
+    (4, 5, 6, 7),  # front face
     (3, 2, 6, 7),  # top face
     (0, 1, 5, 4),  # bottom face
     (1, 2, 6, 5),  # right face
@@ -28,7 +28,7 @@ faces = np.array([
 
 # Texture coordinates for the faces
 texture_coords = [
-    (0, 0), (1, 0), (1, 1), (0, 1)  # For each face
+    (0, 0), (1, 0), (1, 1), (0, 1)
 ]
 
 textures = {}
@@ -60,19 +60,21 @@ def Cube(position, block_type, visible_faces):
 
     for i, face in enumerate(faces):
         if visible_faces[i]:  # Only render the face if it's visible
-            glBindTexture(GL_TEXTURE_2D, textures_list[i])
-            glBegin(GL_QUADS)
-            for j, vertex in enumerate(face):
-                # Texture coordinates
-                glTexCoord2f(*texture_coords[j])
-                glVertex3f(vertices[vertex][0] + x, vertices[vertex][1] + y, vertices[vertex][2] + z)
-            glEnd()
+            try:
+                glBindTexture(GL_TEXTURE_2D, textures_list[i])
+                glBegin(GL_QUADS)
+                for j, vertex in enumerate(face):
+                    glTexCoord2f(*texture_coords[j])
+                    glVertex3f(vertices[vertex][0] + x, vertices[vertex][1] + y, vertices[vertex][2] + z)
+                glEnd()
+            except Exception as e:
+                print(f"Error in Cube at position {position}, face {i}, vertex {vertex}: {e}")
 
-def generate_chunk(offset_x, offset_z, chunk_size=16):
+def generate_chunk(offset_x, offset_z, chunk_size=4):
     blocks = {}
     for x in range(chunk_size):
         for z in range(chunk_size):
-            for y in range(-128, 1):  # Adjusting height range to 128 deep
+            for y in range(-64, 1):  # Adjusting height range to 64 deep
                 if y < -5:
                     block_type = 'stone'
                 elif y < 0:
@@ -85,8 +87,8 @@ def generate_chunk(offset_x, offset_z, chunk_size=16):
     for pos, block_type in blocks.items():
         x, y, z = pos
         visible_faces = [
-            (x, y, z - 1) not in blocks,  # front face
-            (x, y, z + 1) not in blocks,  # back face
+            (x, y, z - 1) not in blocks,  # back face
+            (x, y, z + 1) not in blocks,  # front face
             (x, y + 1, z) not in blocks,  # top face
             (x, y - 1, z) not in blocks,  # bottom face
             (x + 1, y, z) not in blocks,  # right face
@@ -97,7 +99,7 @@ def generate_chunk(offset_x, offset_z, chunk_size=16):
     print(f"Generated chunk at ({offset_x}, {offset_z}) with {len(chunk_data)} blocks.")
     return chunk_data
 
-def update_chunks(chunks, current_pos, chunk_size=16, render_distance=2):
+def update_chunks(chunks, current_pos, chunk_size=4, render_distance=8):
     """
     Update the chunks: add new ones around the current position and remove those that are too far.
     """
@@ -164,7 +166,7 @@ def main():
 
     rotation_angle = 0
     camera_pos = (0, 0)  # Initial camera position (could be adjusted later)
-    render_distance = 2  # Distance to render chunks
+    render_distance = 8  # Distance to render chunks
 
     while True:
         for event in pygame.event.get():
@@ -177,7 +179,7 @@ def main():
                     return
 
         # Update chunks based on the current position
-        update_chunks(chunks, camera_pos, chunk_size=16, render_distance=render_distance)
+        update_chunks(chunks, camera_pos, chunk_size=4, render_distance=render_distance)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
@@ -191,9 +193,7 @@ def main():
                 Cube(position, block_type, visible_faces)
 
         check_for_opengl_errors()
-
         pygame.display.flip()
         pygame.time.wait(10)
 
-if __name__ == "__main__":
-    main()
+main()
